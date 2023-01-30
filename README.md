@@ -1,10 +1,13 @@
 # Karura-Forest-Changes
- The GEE script above is used to asses the land cover changes in Karura Forest using landsat satellite images from 2001 to 2020.
+ The Google Earth Engine script above is used to asses the land cover changes in Karura Forest using landsat satellite images from 2001 to 2020.
  It accomplishes the following
   a. Collect and process annual Landsat  imagery
   b. Implements supervised classification
   c. Compute annual changes between forest and non-forests
   d. Plots a chart of total area under forest on an annual timespan (2001 - 2020)
   
- # the Karura shapefile is based on the forest data available in the ICPAC geoportal
+ # The Karura Forest extents is based on the forest data available in the ICPAC geoportal
   https://geoportal.icpac.net/layers/geonode%3Aken_forests
+
+#A chart of total changes in Karura Forest from 2001 - 2020
+![ee-chart](https://user-images.githubusercontent.com/39521684/215453257-0b84541e-fa7c-4249-ad0b-bba56a0db75f.svg)
