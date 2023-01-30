@@ -1,0 +1,112 @@
+var KA_FOREST = ee.FeatureCollection("users/Dawoods_Kym/KA_forest")
+Map.addLayer(KA_FOREST)
+Map.addLayer(KA_FOREST)
+var L2021_1 = ee.ImageCollection("LANDSAT/LC08/C01/T1_TOA")
+  .filterBounds(KA_FOREST)
+  .filterDate('2021-01-01','2021-10-01')
+  .sort('CLOUD_COVER')
+  .first();
+  
+  var L2021_2 = ee.ImageCollection("LANDSAT/LC08/C01/T1_TOA")
+    .filterBounds(KA_FOREST)
+    .filterDate('2021-01-01','2021-10-01')
+    .sort('CLOUD_COVER')
+    .first();
+    
+  // mosaic the two image collections
+  var mosaic_2021 = ee.ImageCollection.fromImages([L2021_2,L2021_1]).mosaic();
+  
+//clipping by KA_FOREST
+var L2021_Forest = mosaic_2021.clip(KA_FOREST);
+
+Map.addLayer(L2021_Forest, {bands: ['B4','B3','B2'], min: 0, max: 0.3,gamma: 1.4}, 'Forest_2021');
+//zoom to roi
+Map.centerObject(KA_FOREST,9);
+// add roi to map
+Map.addLayer(KA_FOREST,{},'Forest_mun');
+
+// merge sample points together into one featurecollection
+var LULC_2021 = forest.merge(non_forest)
+// // print(LULC);
+
+var bands = ['B2','B3','B4','B5','B6','B7','B10'];
+// // sample the input imagery to get featurecollection of training data
+var training = L2021_Forest.select(bands).sampleRegions({
+  collection: LULC_2021,
+  properties: ['LULC'],
+  scale: 30
+});
+// train the classifier
+var classifier = ee.Classifier.smileCart().train({
+  features: training,
+  classProperty: 'LULC',
+  inputProperties: bands
+})
+// classify the input imagery
+var classified_2021 = L2021_Forest.select(bands).classify(classifier);
+// Define color pallettes
+var palette = [
+  '288b0c', 
+  'ffac5e', 
+  ];
+// display the classified result
+Map.addLayer(classified_2021,{min:0,max:2,palette:palette},'LULC2021_classified');
+
+var withRandom = training.randomColumn('random');
+
+var split = 0.7; //roughly 70% training, 30% testing
+var trainingPartition = withRandom.filter(ee.Filter.lt('random', split));
+var testingPartition = withRandom.filter(ee.Filter.gte('random', split));
+
+var trainedClassifier = ee.Classifier.libsvm().train({
+  features: trainingPartition,
+  classProperty: 'LULC',
+  inputProperties: bands
+});
+// classify the test feature collection
+var test = testingPartition.classify(trainedClassifier);
+// print the confusion matrix
+var confusionMatrix_2021 = test.errorMatrix('classProperty', 'classi')
+// print('confusion matrix 2021', confusionMatrix_2021)
+
+var gfc2017 = ee.Image("UMD/hansen/global_forest_change_2020_v1_8");
+print('confusion matrix 2021', confusionMatrix_2021)
+
+var lossImage = gfc2017.select(['loss']);
+var lossAreaImage = lossImage.multiply(ee.Image.pixelArea());
+
+var lossYear = gfc2017.select(['lossyear']);
+var lossByYear = lossAreaImage.addBands(lossYear).reduceRegion({
+  reducer: ee.Reducer.sum().group({
+    groupField: 1
+    }),
+  geometry: KA_FOREST,
+  scale: 30,
+  maxPixels: 1e9
+});
+print(lossByYear);
+
+
+var statsFormatted = ee.List(lossByYear.get('groups'))
+  .map(function(el) {
+    var d = ee.Dictionary(el);
+    return [ee.Number(d.get('group')).format("20%02d"), d.get('sum')];
+  });
+var statsDictionary = ee.Dictionary(statsFormatted.flatten());
+print(statsDictionary);
+
+
+var chart = ui.Chart.array.values({
+  array: statsDictionary.values(),
+  axis: 0,
+  xLabels: statsDictionary.keys()
+}).setChartType('ColumnChart')
+  .setOptions({
+    title: 'KARURA FOREST - ANNUAL FOREST LOSS',
+    hAxis: {title: 'Year', format: '####'},
+    vAxis: {title: 'Area (in square meters)'},
+    legend: { position: "none" },
+    lineWidth: 1,
+    pointSize: 3
+  });
+print(chart);
