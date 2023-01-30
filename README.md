@@ -10,4 +10,5 @@
   https://geoportal.icpac.net/layers/geonode%3Aken_forests
 
 #A chart of total changes in Karura Forest from 2001 - 2020
-![ee-chart](https://user-images.githubusercontent.com/39521684/215453257-0b84541e-fa7c-4249-ad0b-bba56a0db75f.svg)
+![ee-chart](https://user-images.githubusercontent.com/39521684/215453484-69481135-f6ea-4d7f-80a7-80087848bf00.png)
+
